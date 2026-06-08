@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
           $middleware->api(append: [
         \App\Http\Middleware\SetLocale::class,
     ]);
+          $middleware->alias([
+        'account.active' => \App\Http\Middleware\EnsureAccountIsActive::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
