@@ -24,6 +24,12 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────
 Route::post('/auth/login',  [AuthController::class, 'login']);
+  // Engagements
+    Route::apiResource('cohorts.engagements', EngagementController::class)->shallow();
+
+    // Sessions
+    Route::apiResource('engagements.sessions', SessionController::class)->shallow();
+    Route::patch('sessions/{session}/deliver', [SessionController::class, 'deliver']);
 
 // ── Authenticated ────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
@@ -49,11 +55,11 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
     Route::delete('lab-groups/{labGroup}/students/{user}',  [LabGroupController::class, 'removeStudent']);
 
     // Engagements
-    Route::apiResource('cohorts.engagements', EngagementController::class)->shallow();
+   // Route::apiResource('cohorts.engagements', EngagementController::class)->shallow();
 
     // Sessions
-    Route::apiResource('engagements.sessions', SessionController::class)->shallow();
-    Route::patch('sessions/{session}/deliver', [SessionController::class, 'deliver']);
+   // Route::apiResource('engagements.sessions', SessionController::class)->shallow();
+    //Route::patch('sessions/{session}/deliver', [SessionController::class, 'deliver']);
 
     // Attendance
     Route::get('sessions/{session}/attendance',           [AttendanceController::class, 'index']);
