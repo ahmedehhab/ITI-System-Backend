@@ -3,64 +3,53 @@
 namespace App\Policies;
 
 use App\Models\AttendanceRecord;
+use App\Models\Session;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class AttendanceRecordPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+   // who can list records for a given session. 
+    public function viewAny(User $user, Session $session): bool
     {
-        return false;
+        return match ($user->role) {
+            'branch_manager', 'track_admin' => true,
+            'instructor' => $session->engagement->instructor_id === $user->id,
+            default => false,
+        };
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, AttendanceRecord $attendanceRecord): bool
+  // who can post attendance records for a session.
+    public function create(User $user, Session $session): bool
     {
-        return false;
+        return match ($user->role) {
+            'track_admin' => $session->engagement->cohort
+                ->trackAdmins()->where('user_id', $user->id)->exists(),
+            'instructor'  => $session->engagement->instructor_id === $user->id,
+            default       => false,
+        };
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+   // track admins or the session's instructor only can update a record.
+    public function update(User $user, AttendanceRecord $record): bool
     {
-        return false;
+        $session = $record->session;
+
+        return match ($user->role) {
+            'track_admin' => $session->engagement->cohort
+                ->trackAdmins()->where('user_id', $user->id)->exists(),
+            'instructor'  => $session->engagement->instructor_id === $user->id,
+            default       => false,
+        };
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, AttendanceRecord $attendanceRecord): bool
+     // students see only their own history.
+    // admins and instructors can view any student's history.
+    public function viewHistory(User $user, User $student): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, AttendanceRecord $attendanceRecord): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, AttendanceRecord $attendanceRecord): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, AttendanceRecord $attendanceRecord): bool
-    {
-        return false;
+        return match ($user->role) {
+            'branch_manager', 'track_admin', 'instructor' => true,
+            'student' => $user->id === $student->id,
+            default   => false,
+        };
     }
 }
