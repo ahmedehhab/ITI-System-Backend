@@ -2,65 +2,70 @@
 
 namespace App\Policies;
 
+use App\Models\Engagement;
 use App\Models\Session;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class SessionPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+     // Instructors see sessions for their own engagements only.
+     // Track admins and branch managers see all.
+     
+    public function viewAny(User $user, Engagement $engagement): bool
     {
-        return false;
+        
+        return match ($user->role) {
+            'branch_manager', 'track_admin' => true,
+            'instructor' => $engagement->instructor_id === $user->id,
+            default => false,
+        };
+        
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Session $session): bool
     {
-        return false;
+        
+        return match ($user->role) {
+            'branch_manager', 'track_admin' => true,
+            'instructor' => $session->engagement->instructor_id === $user->id,
+            default => false,
+        };
+        
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    
+     // Only track admins may create sessions inside an engagement.
+     
+    public function create(User $user, Engagement $engagement): bool
     {
-        return false;
+        
+        if ($user->role !== 'track_admin') {
+            return false;
+        }
+
+        // Track admin must own the cohort this engagement belongs to
+        return $engagement->cohort->trackAdmins()->where('user_id', $user->id)->exists();
+        
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Session $session): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Session $session): bool
     {
-        return false;
+        return $this->create($user, $session->engagement);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Session $session): bool
+    
+     // Instructors deliver their own sessions; track admins can deliver any.
+     
+    public function deliver(User $user, Session $session): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Session $session): bool
-    {
-        return false;
+        
+        return match ($user->role) {
+            'track_admin' => $session->engagement->cohort->trackAdmins()
+                ->where('user_id', $user->id)->exists(),
+            'instructor'  => $session->engagement->instructor_id === $user->id,
+            default       => false,
+        };
+        
     }
 }

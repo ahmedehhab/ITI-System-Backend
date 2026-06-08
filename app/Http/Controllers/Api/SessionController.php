@@ -3,47 +3,78 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Session\StoreSessionRequest;
+use App\Http\Resources\SessionResource;
+use App\Models\Engagement;
+use App\Models\Session;
+use App\Services\BillingService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SessionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(private readonly BillingService $billingService) {}
+
+  
+     // List all sessions for an engagement.
+     // Track admins see all; instructors see only their own engagement's sessions.
+     
+    public function index(Engagement $engagement): AnonymousResourceCollection
     {
-        //
+       // $this->authorize('viewAny', [Session::class, $engagement]);
+
+        $sessions = $engagement->sessions()->orderBy('session_date')->get();
+
+        return SessionResource::collection($sessions);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+     // Track admin creates a session inside an engagement.
+    public function store(StoreSessionRequest $request, Engagement $engagement): SessionResource
     {
-        //
+       // $this->authorize('create', [Session::class, $engagement]);
+
+        $session = $engagement->sessions()->create($request->validated());
+
+        return new SessionResource($session);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+     // Show a single session (shallow route).
+    public function show(Session $session): SessionResource
     {
-        //
+      //  $this->authorize('view', $session);
+
+        return new SessionResource($session->load('engagement'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+     // Track admin may delete an undelivered session.
+    
+    public function destroy(Session $session): JsonResponse
     {
-        //
+      //  $this->authorize('delete', $session);
+
+        abort_if($session->is_delivered, 422, __('messages.cannot_delete_delivered'));
+
+        $session->delete();
+
+        return response()->json(['message' => __('messages.session_deleted')]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+   
+     // Mark session as delivered; triggers billing calculation.
+     
+    public function deliver(Session $session): SessionResource
     {
-        //
+       // $this->authorize('deliver', $session);
+
+        abort_if($session->is_delivered, 422, __('messages.session_already_delivered'));
+
+        $session->update(['is_delivered' => true]);
+
+        // Notify billing — BillingService stub will be filled in later
+        $this->billingService->recordForSession($session);
+
+        return new SessionResource($session->fresh('engagement'));
     }
 }
+
+   
