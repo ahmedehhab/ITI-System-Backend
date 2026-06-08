@@ -24,11 +24,11 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────
 Route::post('/auth/login',  [AuthController::class, 'login']);
-  // Engagements
-    Route::apiResource('cohorts.engagements', EngagementController::class)->shallow();
+// Engagements
+   Route::apiResource('cohorts.engagements', EngagementController::class)->shallow();
 
     // Sessions
-    Route::apiResource('engagements.sessions', SessionController::class)->shallow();
+   Route::apiResource('engagements.sessions', SessionController::class)->shallow();
     Route::patch('sessions/{session}/deliver', [SessionController::class, 'deliver']);
 
 // ── Authenticated ────────────────────────────────────────
