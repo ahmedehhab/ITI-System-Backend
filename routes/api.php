@@ -22,7 +22,7 @@ use App\Http\Controllers\Api\QrController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ──────────────────────────────────────────────
-Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
+Route::post('/auth/login',  [AuthController::class, 'login']);
 
 // ── Authenticated ────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
@@ -55,10 +55,10 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
     Route::patch('sessions/{session}/deliver', [SessionController::class, 'deliver']);
 
     // Attendance
-    Route::get('sessions/{session}/attendance',            [AttendanceController::class, 'index']);
-    Route::post('sessions/{session}/attendance',           [AttendanceController::class, 'store']);
-    Route::patch('sessions/{session}/attendance/{record}', [AttendanceController::class, 'update']);
-    Route::get('students/{user}/attendance',               [AttendanceController::class, 'studentHistory']);
+    Route::get('sessions/{session}/attendance',           [AttendanceController::class, 'index']);
+    Route::post('sessions/{session}/attendance',          [AttendanceController::class, 'store']);
+    Route::patch('sessions/{session}/attendance/{record}',[AttendanceController::class, 'update']);
+    Route::get('students/{user}/attendance',              [AttendanceController::class, 'studentHistory']);
 
     // Ledger
     Route::get('students/{user}/ledger', [AttendanceLedgerController::class, 'show']);
